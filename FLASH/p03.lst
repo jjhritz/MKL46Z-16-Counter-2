@@ -1,0 +1,1610 @@
+
+p03.elf:     file format elf32-littlearm
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .interrupts   000000c0  00000000  00000000  000000b4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  1 .text         00000810  00000800  00000800  00000174  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  2 .bss          0000001c  1fffe000  1fffe000  0000099c  2**2
+                  ALLOC
+  3 .romp         00000018  1fffe01c  00001010  00000984  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+  4 .debug_info   00001491  00000000  00000000  0000099c  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  5 .debug_abbrev 0000067e  00000000  00000000  00001e2d  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  6 .debug_loc    000003b4  00000000  00000000  000024ab  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  7 .debug_aranges 00000188  00000000  00000000  00002860  2**3
+                  CONTENTS, READONLY, DEBUGGING
+  8 .debug_macinfo 001b59e7  00000000  00000000  000029e8  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  9 .debug_line   00000833  00000000  00000000  001b83cf  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 10 .debug_str    000006ab  00000000  00000000  001b8c02  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 11 .comment      00000079  00000000  00000000  001b92ad  2**0
+                  CONTENTS, READONLY
+ 12 .ARM.attributes 0000002d  00000000  00000000  001b9326  2**0
+                  CONTENTS, READONLY
+ 13 .debug_frame  000002ac  00000000  00000000  001b9354  2**2
+                  CONTENTS, READONLY, DEBUGGING
+
+Disassembly of section .text:
+
+00000800 <bare_sp_init>:
+@-----------------------------------------------------------------------------------------------------------------------
+.func bare_sp_init, bare_sp_init
+.type bare_sp_init, %function
+.thumb_func
+bare_sp_init:
+    ldr     r0, =__init_sp              @ r0 = memory address where SP register is initialized to point to
+     800:	4809      	ldr	r0, [pc, #36]	; (828 <bare_startup+0x18>)
+    ldr     r1, dead_beef               @ r1 = 0xDEAD_BEEF
+     802:	4902      	ldr	r1, [pc, #8]	; (80c <dead_beef>)
+    str     r1, [r0]                    @ MEM[__init_sp] = 0xDEADBEEF
+     804:	6001      	str	r1, [r0, #0]
+    mov     sp, r0                      @ sp = __init_sp
+     806:	4685      	mov	sp, r0
+    bx      lr                          @ return
+     808:	4770      	bx	lr
+     80a:	46c0      	nop			; (mov r8, r8)
+
+0000080c <dead_beef>:
+     80c:	deadbeef 	.word	0xdeadbeef
+
+00000810 <bare_startup>:
+@-----------------------------------------------------------------------------------------------------------------------
+.func bare_startup, bare_startup
+.type bare_startup, %function
+.thumb_func
+bare_startup:
+    bl      bare_sp_init                   @ bare_sp_init()
+     810:	f7ff fff6 	bl	800 <bare_sp_init>
+    bl      bare_hw_init                   @ bare_hw_init()
+     814:	f000 f944 	bl	aa0 <bare_hw_init>
+    bl      bare_bss_zero_fill             @ bare_bss_zero_fill()
+     818:	f000 f84c 	bl	8b4 <bare_bss_zero_fill>
+    bl      bare_copy_rom_sections_to_ram  @ bare_copy_rom_sections_to_ram()
+     81c:	f000 f906 	bl	a2c <bare_copy_rom_sections_to_ram>
+    bl      main
+     820:	f000 fb80 	bl	f24 <main>
+
+@ Drop into an infinite loop if main() should return
+1:  b       1b
+     824:	e7fe      	b.n	824 <bare_startup+0x14>
+     826:	0000      	.short	0x0000
+@-----------------------------------------------------------------------------------------------------------------------
+.func bare_sp_init, bare_sp_init
+.type bare_sp_init, %function
+.thumb_func
+bare_sp_init:
+    ldr     r0, =__init_sp              @ r0 = memory address where SP register is initialized to point to
+     828:	20005ffc 	.word	0x20005ffc
+
+0000082c <cse325_memcpy>:
+// DESCRIPTION
+// This is the standard memcpy() function from the C Standard Library. Copy a block of p_size bytes starting at p_src
+// to p_dst.
+//----------------------------------------------------------------------------------------------------------------------
+void cse325_memcpy(uint8_t *p_dst, uint8_t *p_src, int p_size)
+{
+     82c:	b580      	push	{r7, lr}
+     82e:	b084      	sub	sp, #16
+     830:	af00      	add	r7, sp, #0
+     832:	60f8      	str	r0, [r7, #12]
+     834:	60b9      	str	r1, [r7, #8]
+     836:	607a      	str	r2, [r7, #4]
+    if (p_dst == p_src || !p_dst || !p_src) return;
+     838:	68fa      	ldr	r2, [r7, #12]
+     83a:	68bb      	ldr	r3, [r7, #8]
+     83c:	429a      	cmp	r2, r3
+     83e:	d017      	beq.n	870 <cse325_memcpy+0x44>
+     840:	68fb      	ldr	r3, [r7, #12]
+     842:	2b00      	cmp	r3, #0
+     844:	d014      	beq.n	870 <cse325_memcpy+0x44>
+     846:	68bb      	ldr	r3, [r7, #8]
+     848:	2b00      	cmp	r3, #0
+     84a:	d10d      	bne.n	868 <cse325_memcpy+0x3c>
+     84c:	e010      	b.n	870 <cse325_memcpy+0x44>
+    for ( ; p_size > 0; --p_size) {
+        *p_dst++ = *p_src++;
+     84e:	68bb      	ldr	r3, [r7, #8]
+     850:	781a      	ldrb	r2, [r3, #0]
+     852:	68fb      	ldr	r3, [r7, #12]
+     854:	701a      	strb	r2, [r3, #0]
+     856:	68fb      	ldr	r3, [r7, #12]
+     858:	3301      	adds	r3, #1
+     85a:	60fb      	str	r3, [r7, #12]
+     85c:	68bb      	ldr	r3, [r7, #8]
+     85e:	3301      	adds	r3, #1
+     860:	60bb      	str	r3, [r7, #8]
+// to p_dst.
+//----------------------------------------------------------------------------------------------------------------------
+void cse325_memcpy(uint8_t *p_dst, uint8_t *p_src, int p_size)
+{
+    if (p_dst == p_src || !p_dst || !p_src) return;
+    for ( ; p_size > 0; --p_size) {
+     862:	687b      	ldr	r3, [r7, #4]
+     864:	3b01      	subs	r3, #1
+     866:	607b      	str	r3, [r7, #4]
+     868:	687b      	ldr	r3, [r7, #4]
+     86a:	2b00      	cmp	r3, #0
+     86c:	dcef      	bgt.n	84e <cse325_memcpy+0x22>
+     86e:	e000      	b.n	872 <cse325_memcpy+0x46>
+// This is the standard memcpy() function from the C Standard Library. Copy a block of p_size bytes starting at p_src
+// to p_dst.
+//----------------------------------------------------------------------------------------------------------------------
+void cse325_memcpy(uint8_t *p_dst, uint8_t *p_src, int p_size)
+{
+    if (p_dst == p_src || !p_dst || !p_src) return;
+     870:	46c0      	nop			; (mov r8, r8)
+    for ( ; p_size > 0; --p_size) {
+        *p_dst++ = *p_src++;
+    }
+}
+     872:	46bd      	mov	sp, r7
+     874:	b004      	add	sp, #16
+     876:	bd80      	pop	{r7, pc}
+
+00000878 <cse325_memset>:
+// DESCRIPTION
+// This is the standard memset() function from the C Standard Library. Fill a block of memory of size p_size starting
+// at address p_begin with the value p_fill_value.
+//----------------------------------------------------------------------------------------------------------------------
+void cse325_memset(uint8_t *p_begin, uint8_t p_fill_value, int p_size)
+{
+     878:	b580      	push	{r7, lr}
+     87a:	b084      	sub	sp, #16
+     87c:	af00      	add	r7, sp, #0
+     87e:	60f8      	str	r0, [r7, #12]
+     880:	607a      	str	r2, [r7, #4]
+     882:	1c3b      	adds	r3, r7, #0
+     884:	330b      	adds	r3, #11
+     886:	1c0a      	adds	r2, r1, #0
+     888:	701a      	strb	r2, [r3, #0]
+    if (!p_begin) return;
+     88a:	68fb      	ldr	r3, [r7, #12]
+     88c:	2b00      	cmp	r3, #0
+     88e:	d10b      	bne.n	8a8 <cse325_memset+0x30>
+     890:	e00d      	b.n	8ae <cse325_memset+0x36>
+    for ( ; p_size > 0; --p_size) {
+        *p_begin++ = p_fill_value;
+     892:	68fb      	ldr	r3, [r7, #12]
+     894:	1c3a      	adds	r2, r7, #0
+     896:	320b      	adds	r2, #11
+     898:	7812      	ldrb	r2, [r2, #0]
+     89a:	701a      	strb	r2, [r3, #0]
+     89c:	68fb      	ldr	r3, [r7, #12]
+     89e:	3301      	adds	r3, #1
+     8a0:	60fb      	str	r3, [r7, #12]
+// at address p_begin with the value p_fill_value.
+//----------------------------------------------------------------------------------------------------------------------
+void cse325_memset(uint8_t *p_begin, uint8_t p_fill_value, int p_size)
+{
+    if (!p_begin) return;
+    for ( ; p_size > 0; --p_size) {
+     8a2:	687b      	ldr	r3, [r7, #4]
+     8a4:	3b01      	subs	r3, #1
+     8a6:	607b      	str	r3, [r7, #4]
+     8a8:	687b      	ldr	r3, [r7, #4]
+     8aa:	2b00      	cmp	r3, #0
+     8ac:	dcf1      	bgt.n	892 <cse325_memset+0x1a>
+        *p_begin++ = p_fill_value;
+    }
+}
+     8ae:	46bd      	mov	sp, r7
+     8b0:	b004      	add	sp, #16
+     8b2:	bd80      	pop	{r7, pc}
+
+000008b4 <bare_bss_zero_fill>:
+// DESCRIPTION
+// This function fills the .bss section in RAM with all zeros. __bss_begin and __bss_end are defined in the linker
+// script.
+//----------------------------------------------------------------------------------------------------------------------
+void bare_bss_zero_fill()
+{
+     8b4:	b580      	push	{r7, lr}
+     8b6:	af00      	add	r7, sp, #0
+    extern uint8_t __bss_begin[];
+    extern uint8_t __bss_end[];
+    cse325_memset(__bss_begin, 0, __bss_end - __bss_begin);
+     8b8:	4a05      	ldr	r2, [pc, #20]	; (8d0 <bare_bss_zero_fill+0x1c>)
+     8ba:	4b06      	ldr	r3, [pc, #24]	; (8d4 <bare_bss_zero_fill+0x20>)
+     8bc:	1ad3      	subs	r3, r2, r3
+     8be:	4a05      	ldr	r2, [pc, #20]	; (8d4 <bare_bss_zero_fill+0x20>)
+     8c0:	1c10      	adds	r0, r2, #0
+     8c2:	2100      	movs	r1, #0
+     8c4:	1c1a      	adds	r2, r3, #0
+     8c6:	f7ff ffd7 	bl	878 <cse325_memset>
+}
+     8ca:	46bd      	mov	sp, r7
+     8cc:	bd80      	pop	{r7, pc}
+     8ce:	46c0      	nop			; (mov r8, r8)
+     8d0:	1fffe01c 	.word	0x1fffe01c
+     8d4:	1fffe000 	.word	0x1fffe000
+
+000008d8 <bare_clocks_init>:
+// DESCRIPTION
+// Initializes the Core, Platform, and System clocks to 48 MHz and the Bus and Flash clocks to 24 MHz. This code is
+// originally from Freescale, but I modified it a bit to make it -- in my opinion -- a bit more readable.
+//----------------------------------------------------------------------------------------------------------------------
+static void bare_clocks_init()
+{
+     8d8:	b580      	push	{r7, lr}
+     8da:	b082      	sub	sp, #8
+     8dc:	af00      	add	r7, sp, #0
+    // value will be 2 and the Bus and Flash clock divider value will be 2. The PLL VCOCLK output will be configured to
+    // 96 MHz, so these dividers will result in the Core, Platform, and System clock freqs to be 48 MHz and the Bus
+    // and Flash clock freqs to be 24 MHz.
+    // SIM_CLKDIV1[OUTDIV1] = 1 (divide value for Core, Platform, and System clocks = 2)
+    // SIM_CLKDIV1[OUTDIV4] = 1 (divide value for Bus and Flash clocks = 2; clock freq will be one-half System clock)
+    SIM_CLKDIV1 = 0x10010000;
+     8de:	4a46      	ldr	r2, [pc, #280]	; (9f8 <bare_clocks_init+0x120>)
+     8e0:	4b46      	ldr	r3, [pc, #280]	; (9fc <bare_clocks_init+0x124>)
+     8e2:	4947      	ldr	r1, [pc, #284]	; (a00 <bare_clocks_init+0x128>)
+     8e4:	50d1      	str	r1, [r2, r3]
+    // MCG_SC[ATMS]     = unchanged
+    // MCG_SC[ATF]      = unchanged
+    // MCG_SC[FLTPRSRV] = unchanged
+    // MCG_SC[FRCDIV]   = 0b000 (divide-by-1)
+    // MCG_SC[LOCS0]    = unchanged
+    MCG_SC &= ~(0b111 << 1);
+     8e6:	4b47      	ldr	r3, [pc, #284]	; (a04 <bare_clocks_init+0x12c>)
+     8e8:	4a46      	ldr	r2, [pc, #280]	; (a04 <bare_clocks_init+0x12c>)
+     8ea:	7a12      	ldrb	r2, [r2, #8]
+     8ec:	b2d2      	uxtb	r2, r2
+     8ee:	210e      	movs	r1, #14
+     8f0:	438a      	bics	r2, r1
+     8f2:	b2d2      	uxtb	r2, r2
+     8f4:	721a      	strb	r2, [r3, #8]
+    // MCG_C2[RANGE0]  = 0b10 (OSC external clock source is very high range 8-32 MHz)
+    // MCG_C2[HGO0]    = 0 (OSC configured for low power operation)
+    // MCG_C2[EREFS0]  = 1 (external ref clock from OSC = EXTAL is requested)
+    // MCG_C2[LP]      = 0 (FLL or PLL is not disabled in bypass mode)
+    // MCG_C2[IRCS]    = 1 (MCGIRCLK is fast internal ref clock)
+    uint8_t mcg_c2 = MCG_C2;               // mcg_c2 = current value of MCG_C2
+     8f6:	4a43      	ldr	r2, [pc, #268]	; (a04 <bare_clocks_init+0x12c>)
+     8f8:	1dfb      	adds	r3, r7, #7
+     8fa:	7852      	ldrb	r2, [r2, #1]
+     8fc:	701a      	strb	r2, [r3, #0]
+    mcg_c2 &= 0b01000000;                  // Clear all bits except for FCFTRIM, leave it unchanged
+     8fe:	1dfb      	adds	r3, r7, #7
+     900:	1dfa      	adds	r2, r7, #7
+     902:	7811      	ldrb	r1, [r2, #0]
+     904:	2240      	movs	r2, #64	; 0x40
+     906:	400a      	ands	r2, r1
+     908:	701a      	strb	r2, [r3, #0]
+    mcg_c2 |= (0b10 << 4) | (1 << 2) | 1;  // Write 0b10 to OSC, 1 to EREFS0, and 1 to MCGIRCLK
+     90a:	1dfb      	adds	r3, r7, #7
+     90c:	1dfa      	adds	r2, r7, #7
+     90e:	7812      	ldrb	r2, [r2, #0]
+     910:	2125      	movs	r1, #37	; 0x25
+     912:	430a      	orrs	r2, r1
+     914:	701a      	strb	r2, [r3, #0]
+    MCG_C2 = mcg_c2;                       // Update MCG_C2
+     916:	4b3b      	ldr	r3, [pc, #236]	; (a04 <bare_clocks_init+0x12c>)
+     918:	1dfa      	adds	r2, r7, #7
+     91a:	7812      	ldrb	r2, [r2, #0]
+     91c:	705a      	strb	r2, [r3, #1]
+
+    // Continuing, configure OSC0_CR.
+    // OSC0_CR[ERCLKEN]  = 1 (enable OSCERCLK)
+    // OSC0_CR[EREFSTEN] = 0 (OSCERCLK is disabled in Stop mode)
+    OSC0_CR = 0b10000000;
+     91e:	4b3a      	ldr	r3, [pc, #232]	; (a08 <bare_clocks_init+0x130>)
+     920:	2280      	movs	r2, #128	; 0x80
+     922:	701a      	strb	r2, [r3, #0]
+    // MCG_C1[CLKS]     = 0b10 (MCGOUTCLK is external ref clock OSCCLK = 8 MHz)
+    // MCG_C1[FRDIV]    = 0b011 = 3 (external ref clock OSCCLK is divided by 256 = 8 MHz / 256 = 31.25 KHz)
+    // MCG_C1[IREFS]    = 0 (FLL clock source is OSCCLK divided by FRDIV)
+    // MCG_C1[IRCLKEN]  = 1 (MCGIRCLK is enabled)
+    // MCG_C1[IREFSTEN] = 0 (internal ref clock is disabled in Stop mode)
+    MCG_C1 = 0b10011010;
+     924:	4b37      	ldr	r3, [pc, #220]	; (a04 <bare_clocks_init+0x12c>)
+     926:	229a      	movs	r2, #154	; 0x9a
+     928:	701a      	strb	r2, [r3, #0]
+    // MCG_C4[FCTRIM]   = 0b1000
+    // MCG_C4[SCFTRIM]  = 0
+    // When DMX32:DRST_DRS = 0b000 = 0, the FLL clock source reference range is [31.25, 39.0625] KHz, the FLL multiplier
+    // factor is 640, and the DCOCLK range is [20, 25] MHz. In our case, since the FLL clock source is 31.25 KHz, the
+    // DCOCLK will be 32.25 KHz x 640 = 20 MHz.
+    uint8_t mcg_c4 = MCG_C4;  // mcg_c4 = current value of MCG_C4
+     92a:	4a36      	ldr	r2, [pc, #216]	; (a04 <bare_clocks_init+0x12c>)
+     92c:	1dbb      	adds	r3, r7, #6
+     92e:	78d2      	ldrb	r2, [r2, #3]
+     930:	701a      	strb	r2, [r3, #0]
+    mcg_c4 &= 0b00011110;     // Clear all bits except for FCTRIM, leave it unchanged
+     932:	1dbb      	adds	r3, r7, #6
+     934:	1dba      	adds	r2, r7, #6
+     936:	7811      	ldrb	r1, [r2, #0]
+     938:	221e      	movs	r2, #30
+     93a:	400a      	ands	r2, r1
+     93c:	701a      	strb	r2, [r3, #0]
+    MCG_C4 = mcg_c4;          // Update MCG_C4
+     93e:	4b31      	ldr	r3, [pc, #196]	; (a04 <bare_clocks_init+0x12c>)
+     940:	1dba      	adds	r2, r7, #6
+     942:	7812      	ldrb	r2, [r2, #0]
+     944:	70da      	strb	r2, [r3, #3]
+    // Continuing, configure MCG_C5.
+    // MCG_C5[reserved] = 0
+    // MCG_C5[PLLCLKEN] = 0 (MCGPLLCLK is inactive)
+    // MCG_C5[PLLSTEN0] = 0 (MCGPLLCLK is disabled in Stop mode)
+    // MCG_C5[PRDIV0]   = 0b00001 (divides the PLL external ref clock OSCCLK by 2; will be 8 MHz / 2 = 4 MHz)
+    MCG_C5 = 0b00000001;
+     946:	4b2f      	ldr	r3, [pc, #188]	; (a04 <bare_clocks_init+0x12c>)
+     948:	2201      	movs	r2, #1
+     94a:	711a      	strb	r2, [r3, #4]
+    // Continuing, configure MCG_C6.
+    // MCG_C6[LOLIE0] = 0 (no irq generated on loss of FLL or PLL lock)
+    // MCG_C6[PLLS]   = 0 (MCGOUTCLK is still external ref clock OSCCLK = 8 MHz)
+    // MCG_C6[CME0]   = 0 (disables clock monitoring for OSC)
+    // MCG_C6[VDIV0]  = 0b00000 (VCOCLK output from PLL is multiplied by 24; it will be 96 MHz)
+    MCG_C6 = 0b00000000;
+     94c:	4b2d      	ldr	r3, [pc, #180]	; (a04 <bare_clocks_init+0x12c>)
+     94e:	2200      	movs	r2, #0
+     950:	715a      	strb	r2, [r3, #5]
+
+    // Wait until MCG_S[IREFST] changes to 0 indicating that the source of the FLL ref clock is the external ref
+    // clock OSCCLK). At this time MCGOUTCLK is 8 MHz.
+    while ((MCG_S & 0b00010000) != 0b00000000) {
+     952:	46c0      	nop			; (mov r8, r8)
+     954:	4b2b      	ldr	r3, [pc, #172]	; (a04 <bare_clocks_init+0x12c>)
+     956:	799b      	ldrb	r3, [r3, #6]
+     958:	b2db      	uxtb	r3, r3
+     95a:	1c1a      	adds	r2, r3, #0
+     95c:	2310      	movs	r3, #16
+     95e:	4013      	ands	r3, r2
+     960:	d1f8      	bne.n	954 <bare_clocks_init+0x7c>
+    }
+
+    // Wait until MCG_S[CLKST] changes to 0b10 indicating that MCGOUTCLK is OSCCLK = 8 MHz.
+    while ((MCG_S & 0b00001100) != 0b00001000) {
+     962:	46c0      	nop			; (mov r8, r8)
+     964:	4b27      	ldr	r3, [pc, #156]	; (a04 <bare_clocks_init+0x12c>)
+     966:	799b      	ldrb	r3, [r3, #6]
+     968:	b2db      	uxtb	r3, r3
+     96a:	1c1a      	adds	r2, r3, #0
+     96c:	230c      	movs	r3, #12
+     96e:	4013      	ands	r3, r2
+     970:	2b08      	cmp	r3, #8
+     972:	d1f7      	bne.n	964 <bare_clocks_init+0x8c>
+    // We are now in FBE mode. Switch to PBE mode by configuring MCG_C6.
+    // MCG_C6[LOLIE0] = 0 (no irq generated on loss of FLL or PLL lock)
+    // MCG_C6[PLLS]   = 1 (MCGOUTCLK is MCGPLLCLK)
+    // MCG_C6[CME0]   = 0 (disables clock monitoring for OSC)
+    // MCG_C6[VDIV0]  = 0b00000 (VCOCLK output from PLL is multiplied by 24; it will be 96 MHz)
+    MCG_C6 = 0b01000000;
+     974:	4b23      	ldr	r3, [pc, #140]	; (a04 <bare_clocks_init+0x12c>)
+     976:	2240      	movs	r2, #64	; 0x40
+     978:	715a      	strb	r2, [r3, #5]
+
+    // Wait until MCG_S[CLKST] changes to 0b10 indicating that MCGOUTCLK is OSCCLK = 8 MHz).
+    while ((MCG_S & 0b00001100) != 0b00001000) {
+     97a:	46c0      	nop			; (mov r8, r8)
+     97c:	4b21      	ldr	r3, [pc, #132]	; (a04 <bare_clocks_init+0x12c>)
+     97e:	799b      	ldrb	r3, [r3, #6]
+     980:	b2db      	uxtb	r3, r3
+     982:	1c1a      	adds	r2, r3, #0
+     984:	230c      	movs	r3, #12
+     986:	4013      	ands	r3, r2
+     988:	2b08      	cmp	r3, #8
+     98a:	d1f7      	bne.n	97c <bare_clocks_init+0xa4>
+    }
+
+    // Wait until MCG_S[LOCK0] changes to 1 indicating that the PLL has locked onto its ref clock.
+    while ((MCG_S & 0b01000000) == 0b00000000) {
+     98c:	46c0      	nop			; (mov r8, r8)
+     98e:	4b1d      	ldr	r3, [pc, #116]	; (a04 <bare_clocks_init+0x12c>)
+     990:	799b      	ldrb	r3, [r3, #6]
+     992:	b2db      	uxtb	r3, r3
+     994:	1c1a      	adds	r2, r3, #0
+     996:	2340      	movs	r3, #64	; 0x40
+     998:	4013      	ands	r3, r2
+     99a:	d0f8      	beq.n	98e <bare_clocks_init+0xb6>
+    // MCG_C1[CLKS]     = 0b00 (MCGOUTCLK is MCGPLLCLK which is VCOCLK / 2 = 96 MHz / 2 = 48 MHz)
+    // MCG_C1[FRDIV]    = 0b011 = 3 (do not change)
+    // MCG_C1[IREFS]    = 0 (do not change)
+    // MCG_C1[IRCLKEN]  = 1 (MCGIRCLK is enabled)
+    // MCG_C1[IREFSTEN] = 0 (internal ref clock is disabled in Stop mode)
+    MCG_C1 = 0b00011010;
+     99c:	4b19      	ldr	r3, [pc, #100]	; (a04 <bare_clocks_init+0x12c>)
+     99e:	221a      	movs	r2, #26
+     9a0:	701a      	strb	r2, [r3, #0]
+
+    // Wait until MCG_S[CLKST] changes to 0b11 indicating that MCGOUTCLK = MCGPLLCLK = 48 MHz).
+    while ((MCG_S & 0b00001100) != 0b00001100) {
+     9a2:	46c0      	nop			; (mov r8, r8)
+     9a4:	4b17      	ldr	r3, [pc, #92]	; (a04 <bare_clocks_init+0x12c>)
+     9a6:	799b      	ldrb	r3, [r3, #6]
+     9a8:	b2db      	uxtb	r3, r3
+     9aa:	1c1a      	adds	r2, r3, #0
+     9ac:	230c      	movs	r3, #12
+     9ae:	4013      	ands	r3, r2
+     9b0:	2b0c      	cmp	r3, #12
+     9b2:	d1f7      	bne.n	9a4 <bare_clocks_init+0xcc>
+    }
+
+    // Set global variables. These are defined in global.c and declared in global.h.
+    global_core_clock_freq_mhz     = 48;
+     9b4:	4b15      	ldr	r3, [pc, #84]	; (a0c <bare_clocks_init+0x134>)
+     9b6:	2230      	movs	r2, #48	; 0x30
+     9b8:	601a      	str	r2, [r3, #0]
+    global_platform_clock_freq_mhz = 48;
+     9ba:	4b15      	ldr	r3, [pc, #84]	; (a10 <bare_clocks_init+0x138>)
+     9bc:	2230      	movs	r2, #48	; 0x30
+     9be:	601a      	str	r2, [r3, #0]
+    global_system_clock_freq_mhz   = 48;
+     9c0:	4b14      	ldr	r3, [pc, #80]	; (a14 <bare_clocks_init+0x13c>)
+     9c2:	2230      	movs	r2, #48	; 0x30
+     9c4:	601a      	str	r2, [r3, #0]
+    global_bus_clock_freq_mhz      = 24;
+     9c6:	4b14      	ldr	r3, [pc, #80]	; (a18 <bare_clocks_init+0x140>)
+     9c8:	2218      	movs	r2, #24
+     9ca:	601a      	str	r2, [r3, #0]
+    global_flash_clock_freq_mhz    = 24;
+     9cc:	4b13      	ldr	r3, [pc, #76]	; (a1c <bare_clocks_init+0x144>)
+     9ce:	2218      	movs	r2, #24
+     9d0:	601a      	str	r2, [r3, #0]
+    global_oscerclk_freq_mhz       = 8;
+     9d2:	4b13      	ldr	r3, [pc, #76]	; (a20 <bare_clocks_init+0x148>)
+     9d4:	2208      	movs	r2, #8
+     9d6:	601a      	str	r2, [r3, #0]
+    global_mcgirclk_freq_mhz       = 4;  // Note that MCGIRCLK is the fast internal reference clock = 4 MHz
+     9d8:	4b12      	ldr	r3, [pc, #72]	; (a24 <bare_clocks_init+0x14c>)
+     9da:	2204      	movs	r2, #4
+     9dc:	601a      	str	r2, [r3, #0]
+
+    // Select MCGPLLCLK/2 to be the clock source for some peripherals.
+    SIM_SOPT2 |= 1 << 16;
+     9de:	4a06      	ldr	r2, [pc, #24]	; (9f8 <bare_clocks_init+0x120>)
+     9e0:	4905      	ldr	r1, [pc, #20]	; (9f8 <bare_clocks_init+0x120>)
+     9e2:	4b11      	ldr	r3, [pc, #68]	; (a28 <bare_clocks_init+0x150>)
+     9e4:	58cb      	ldr	r3, [r1, r3]
+     9e6:	2180      	movs	r1, #128	; 0x80
+     9e8:	0249      	lsls	r1, r1, #9
+     9ea:	4319      	orrs	r1, r3
+     9ec:	4b0e      	ldr	r3, [pc, #56]	; (a28 <bare_clocks_init+0x150>)
+     9ee:	50d1      	str	r1, [r2, r3]
+
+    #ifdef CLKOUT_ENABLE
+        // Enable the CLKOUT pin to be the Bus clock. Note that this disables use of PTC3.
+       bare_clkout_init();
+    #endif
+}
+     9f0:	46bd      	mov	sp, r7
+     9f2:	b002      	add	sp, #8
+     9f4:	bd80      	pop	{r7, pc}
+     9f6:	46c0      	nop			; (mov r8, r8)
+     9f8:	40047000 	.word	0x40047000
+     9fc:	00001044 	.word	0x00001044
+     a00:	10010000 	.word	0x10010000
+     a04:	40064000 	.word	0x40064000
+     a08:	40065000 	.word	0x40065000
+     a0c:	1fffe004 	.word	0x1fffe004
+     a10:	1fffe010 	.word	0x1fffe010
+     a14:	1fffe018 	.word	0x1fffe018
+     a18:	1fffe000 	.word	0x1fffe000
+     a1c:	1fffe008 	.word	0x1fffe008
+     a20:	1fffe014 	.word	0x1fffe014
+     a24:	1fffe00c 	.word	0x1fffe00c
+     a28:	00001004 	.word	0x00001004
+
+00000a2c <bare_copy_rom_sections_to_ram>:
+// This function copies all sections marked as ROM in the .elf file to their target addresses in SRAM. __romp is
+// defined in the linker script as a 1D array where each element is a structure of type bare_rom_table_t. The end of
+// the ROM entries is specified by a structure with all 0's for each of the fields.
+//----------------------------------------------------------------------------------------------------------------------
+void bare_copy_rom_sections_to_ram()
+{
+     a2c:	b590      	push	{r4, r7, lr}
+     a2e:	b083      	sub	sp, #12
+     a30:	af00      	add	r7, sp, #0
+    // If there are no ROM sections to copy then return.
+    if (__romp == 0L) return;
+
+    // Iterate over table entry, copying the section from ROM to SRAM.
+    for (int i = 0; __romp[i].m_source != 0L; ++i) {
+     a32:	2300      	movs	r3, #0
+     a34:	607b      	str	r3, [r7, #4]
+     a36:	e01e      	b.n	a76 <bare_copy_rom_sections_to_ram+0x4a>
+        cse325_memcpy(__romp[i].m_target, __romp[i].m_source, __romp[i].m_size);
+     a38:	4915      	ldr	r1, [pc, #84]	; (a90 <bare_copy_rom_sections_to_ram+0x64>)
+     a3a:	687a      	ldr	r2, [r7, #4]
+     a3c:	1c13      	adds	r3, r2, #0
+     a3e:	005b      	lsls	r3, r3, #1
+     a40:	189b      	adds	r3, r3, r2
+     a42:	009b      	lsls	r3, r3, #2
+     a44:	18cb      	adds	r3, r1, r3
+     a46:	3304      	adds	r3, #4
+     a48:	6818      	ldr	r0, [r3, #0]
+     a4a:	4911      	ldr	r1, [pc, #68]	; (a90 <bare_copy_rom_sections_to_ram+0x64>)
+     a4c:	687a      	ldr	r2, [r7, #4]
+     a4e:	1c13      	adds	r3, r2, #0
+     a50:	005b      	lsls	r3, r3, #1
+     a52:	189b      	adds	r3, r3, r2
+     a54:	009b      	lsls	r3, r3, #2
+     a56:	5859      	ldr	r1, [r3, r1]
+     a58:	4c0d      	ldr	r4, [pc, #52]	; (a90 <bare_copy_rom_sections_to_ram+0x64>)
+     a5a:	687a      	ldr	r2, [r7, #4]
+     a5c:	1c13      	adds	r3, r2, #0
+     a5e:	005b      	lsls	r3, r3, #1
+     a60:	189b      	adds	r3, r3, r2
+     a62:	009b      	lsls	r3, r3, #2
+     a64:	18e3      	adds	r3, r4, r3
+     a66:	3308      	adds	r3, #8
+     a68:	681b      	ldr	r3, [r3, #0]
+     a6a:	1c1a      	adds	r2, r3, #0
+     a6c:	f7ff fede 	bl	82c <cse325_memcpy>
+{
+    // If there are no ROM sections to copy then return.
+    if (__romp == 0L) return;
+
+    // Iterate over table entry, copying the section from ROM to SRAM.
+    for (int i = 0; __romp[i].m_source != 0L; ++i) {
+     a70:	687b      	ldr	r3, [r7, #4]
+     a72:	3301      	adds	r3, #1
+     a74:	607b      	str	r3, [r7, #4]
+     a76:	4906      	ldr	r1, [pc, #24]	; (a90 <bare_copy_rom_sections_to_ram+0x64>)
+     a78:	687a      	ldr	r2, [r7, #4]
+     a7a:	1c13      	adds	r3, r2, #0
+     a7c:	005b      	lsls	r3, r3, #1
+     a7e:	189b      	adds	r3, r3, r2
+     a80:	009b      	lsls	r3, r3, #2
+     a82:	585b      	ldr	r3, [r3, r1]
+     a84:	2b00      	cmp	r3, #0
+     a86:	d1d7      	bne.n	a38 <bare_copy_rom_sections_to_ram+0xc>
+        cse325_memcpy(__romp[i].m_target, __romp[i].m_source, __romp[i].m_size);
+    }
+}
+     a88:	46bd      	mov	sp, r7
+     a8a:	b003      	add	sp, #12
+     a8c:	bd90      	pop	{r4, r7, pc}
+     a8e:	46c0      	nop			; (mov r8, r8)
+     a90:	00001010 	.word	0x00001010
+
+00000a94 <bare_default_isr>:
+// DESCRIPTION
+// Default interrupt service routine. All interrupt vectors direct here unless changed by writing a new address for the
+// ISR to the vector table. This function simply executes an ARM breakpoint instruction, which causes execution to halt.
+//----------------------------------------------------------------------------------------------------------------------
+void bare_default_isr()
+{
+     a94:	b580      	push	{r7, lr}
+     a96:	af00      	add	r7, sp, #0
+    __asm("bkpt");
+     a98:	be00      	bkpt	0x0000
+}
+     a9a:	46bd      	mov	sp, r7
+     a9c:	bd80      	pop	{r7, pc}
+     a9e:	46c0      	nop			; (mov r8, r8)
+
+00000aa0 <bare_hw_init>:
+//
+// DESCRIPTION
+// Called by bare_startup. Initializes SCB_VTOR and SIM_COPC.
+//----------------------------------------------------------------------------------------------------------------------
+void bare_hw_init()
+{
+     aa0:	b580      	push	{r7, lr}
+     aa2:	af00      	add	r7, sp, #0
+    // Write the address of the exception vector table to SCB_VTOR.
+    SCB_VTOR = (uint32_t)__vector_table;
+     aa4:	4a06      	ldr	r2, [pc, #24]	; (ac0 <bare_hw_init+0x20>)
+     aa6:	4907      	ldr	r1, [pc, #28]	; (ac4 <bare_hw_init+0x24>)
+     aa8:	4b07      	ldr	r3, [pc, #28]	; (ac8 <bare_hw_init+0x28>)
+     aaa:	50d1      	str	r1, [r2, r3]
+
+    // Disable the watchdog because it may reset the core before entering main().
+    SIM_COPC = 0x00000000;
+     aac:	4a07      	ldr	r2, [pc, #28]	; (acc <bare_hw_init+0x2c>)
+     aae:	2388      	movs	r3, #136	; 0x88
+     ab0:	015b      	lsls	r3, r3, #5
+     ab2:	2100      	movs	r1, #0
+     ab4:	50d1      	str	r1, [r2, r3]
+
+    // Initialize the Core, Platform, System, Bus, and Flash clocks.
+    bare_clocks_init();
+     ab6:	f7ff ff0f 	bl	8d8 <bare_clocks_init>
+}
+     aba:	46bd      	mov	sp, r7
+     abc:	bd80      	pop	{r7, pc}
+     abe:	46c0      	nop			; (mov r8, r8)
+     ac0:	e000e000 	.word	0xe000e000
+     ac4:	00000000 	.word	0x00000000
+     ac8:	00000d08 	.word	0x00000d08
+     acc:	40047000 	.word	0x40047000
+
+00000ad0 <tpm_busy_delay_ms>:
+	// Write to TPM0_SC[TOF] to clear the timer overflow flag.
+	TPM_SC(timer) |= 1 << 7;
+}
+
+void tpm_busy_delay_ms(uint32_t p_delay_ms)
+{
+     ad0:	b580      	push	{r7, lr}
+     ad2:	b084      	sub	sp, #16
+     ad4:	af00      	add	r7, sp, #0
+     ad6:	6078      	str	r0, [r7, #4]
+	//Enable the clock gate to the TPM module
+	SIM_SCGC6 |= 1 << 24;
+     ad8:	4a30      	ldr	r2, [pc, #192]	; (b9c <tpm_busy_delay_ms+0xcc>)
+     ada:	4930      	ldr	r1, [pc, #192]	; (b9c <tpm_busy_delay_ms+0xcc>)
+     adc:	4b30      	ldr	r3, [pc, #192]	; (ba0 <tpm_busy_delay_ms+0xd0>)
+     ade:	58cb      	ldr	r3, [r1, r3]
+     ae0:	2180      	movs	r1, #128	; 0x80
+     ae2:	0449      	lsls	r1, r1, #17
+     ae4:	4319      	orrs	r1, r3
+     ae6:	4b2e      	ldr	r3, [pc, #184]	; (ba0 <tpm_busy_delay_ms+0xd0>)
+     ae8:	50d1      	str	r1, [r2, r3]
+	
+	// Initialize SIM_SOPT2 to select MCGIRCLK as the TPM0 clock source.
+	//SIM_SOPT2 |= 0b11 << 24;
+	SIM_SOPT2 |= SIM_SOPT2_TPMSRC(0b11);
+     aea:	4a2c      	ldr	r2, [pc, #176]	; (b9c <tpm_busy_delay_ms+0xcc>)
+     aec:	492b      	ldr	r1, [pc, #172]	; (b9c <tpm_busy_delay_ms+0xcc>)
+     aee:	4b2d      	ldr	r3, [pc, #180]	; (ba4 <tpm_busy_delay_ms+0xd4>)
+     af0:	58cb      	ldr	r3, [r1, r3]
+     af2:	21c0      	movs	r1, #192	; 0xc0
+     af4:	0489      	lsls	r1, r1, #18
+     af6:	4319      	orrs	r1, r3
+     af8:	4b2a      	ldr	r3, [pc, #168]	; (ba4 <tpm_busy_delay_ms+0xd4>)
+     afa:	50d1      	str	r1, [r2, r3]
+	
+	// Initialize TPM0_SC to: clear TOF (in case it was set) 
+	TPM0_SC |= 1 << 7;
+     afc:	4b2a      	ldr	r3, [pc, #168]	; (ba8 <tpm_busy_delay_ms+0xd8>)
+     afe:	4a2a      	ldr	r2, [pc, #168]	; (ba8 <tpm_busy_delay_ms+0xd8>)
+     b00:	6812      	ldr	r2, [r2, #0]
+     b02:	2180      	movs	r1, #128	; 0x80
+     b04:	430a      	orrs	r2, r1
+     b06:	601a      	str	r2, [r3, #0]
+	
+	//Intialize TPM0_SC to: operate in up-counting mode
+	TPM0_SC &= ~(1 << 5);
+     b08:	4b27      	ldr	r3, [pc, #156]	; (ba8 <tpm_busy_delay_ms+0xd8>)
+     b0a:	4a27      	ldr	r2, [pc, #156]	; (ba8 <tpm_busy_delay_ms+0xd8>)
+     b0c:	6812      	ldr	r2, [r2, #0]
+     b0e:	2120      	movs	r1, #32
+     b10:	438a      	bics	r2, r1
+     b12:	601a      	str	r2, [r3, #0]
+		
+	// Initialize TPM0_SC to: disable the TPM counter
+	TPM0_SC &= ~(0b11 << 3);
+     b14:	4b24      	ldr	r3, [pc, #144]	; (ba8 <tpm_busy_delay_ms+0xd8>)
+     b16:	4a24      	ldr	r2, [pc, #144]	; (ba8 <tpm_busy_delay_ms+0xd8>)
+     b18:	6812      	ldr	r2, [r2, #0]
+     b1a:	2118      	movs	r1, #24
+     b1c:	438a      	bics	r2, r1
+     b1e:	601a      	str	r2, [r3, #0]
+	//TPM_SC(timer) &= 0 << 4;
+		
+	// Initialize TPM0_SC to divide MCGIRCLK by 4.
+	TPM0_SC &= ~(0b111 << 0);
+     b20:	4b21      	ldr	r3, [pc, #132]	; (ba8 <tpm_busy_delay_ms+0xd8>)
+     b22:	4a21      	ldr	r2, [pc, #132]	; (ba8 <tpm_busy_delay_ms+0xd8>)
+     b24:	6812      	ldr	r2, [r2, #0]
+     b26:	2107      	movs	r1, #7
+     b28:	438a      	bics	r2, r1
+     b2a:	601a      	str	r2, [r3, #0]
+	TPM0_SC |= (1 << 1);
+     b2c:	4b1e      	ldr	r3, [pc, #120]	; (ba8 <tpm_busy_delay_ms+0xd8>)
+     b2e:	4a1e      	ldr	r2, [pc, #120]	; (ba8 <tpm_busy_delay_ms+0xd8>)
+     b30:	6812      	ldr	r2, [r2, #0]
+     b32:	2102      	movs	r1, #2
+     b34:	430a      	orrs	r2, r1
+     b36:	601a      	str	r2, [r3, #0]
+	
+	// Write 0 to TPM0_CNT[COUNT] to reset the TPM counter to 0.
+	TPM0_CNT = 0;
+     b38:	4b1b      	ldr	r3, [pc, #108]	; (ba8 <tpm_busy_delay_ms+0xd8>)
+     b3a:	2200      	movs	r2, #0
+     b3c:	605a      	str	r2, [r3, #4]
+	
+	// Write 999 to TPM0_MOD[MOD] to cause TOF to be set after 1000 us have elapsed.
+	TPM0_MOD = 999;
+     b3e:	4b1a      	ldr	r3, [pc, #104]	; (ba8 <tpm_busy_delay_ms+0xd8>)
+     b40:	4a1a      	ldr	r2, [pc, #104]	; (bac <tpm_busy_delay_ms+0xdc>)
+     b42:	609a      	str	r2, [r3, #8]
+	
+	// Write 0 to TPM_CONF to: clear CSOO so the counter will continue counting on overflow; 
+	TPM0_CONF = 0;
+     b44:	4a18      	ldr	r2, [pc, #96]	; (ba8 <tpm_busy_delay_ms+0xd8>)
+     b46:	2384      	movs	r3, #132	; 0x84
+     b48:	2100      	movs	r1, #0
+     b4a:	50d1      	str	r1, [r2, r3]
+		
+	// Write 0 to TPM_CONF to clear CSOT which will cause the counter to begin counting immediately after it is enabled.
+	TPM0_CONF &= 0 << 16;
+     b4c:	4a16      	ldr	r2, [pc, #88]	; (ba8 <tpm_busy_delay_ms+0xd8>)
+     b4e:	2384      	movs	r3, #132	; 0x84
+     b50:	58d3      	ldr	r3, [r2, r3]
+     b52:	4a15      	ldr	r2, [pc, #84]	; (ba8 <tpm_busy_delay_ms+0xd8>)
+     b54:	2384      	movs	r3, #132	; 0x84
+     b56:	2100      	movs	r1, #0
+     b58:	50d1      	str	r1, [r2, r3]
+	
+	TPM0_SC |= (1 << 3);
+     b5a:	4b13      	ldr	r3, [pc, #76]	; (ba8 <tpm_busy_delay_ms+0xd8>)
+     b5c:	4a12      	ldr	r2, [pc, #72]	; (ba8 <tpm_busy_delay_ms+0xd8>)
+     b5e:	6812      	ldr	r2, [r2, #0]
+     b60:	2108      	movs	r1, #8
+     b62:	430a      	orrs	r2, r1
+     b64:	601a      	str	r2, [r3, #0]
+	
+	for(uint32_t i = 0; i < p_delay_ms; i++)
+     b66:	2300      	movs	r3, #0
+     b68:	60fb      	str	r3, [r7, #12]
+     b6a:	e00f      	b.n	b8c <tpm_busy_delay_ms+0xbc>
+	{
+		// At this time, the TPM counter will begin counting. Wait in a loop polling TOM0_SC[TOF] until it is set.
+		while (~TPM0_SC & TPM_SC_TOF_MASK) {}
+     b6c:	46c0      	nop			; (mov r8, r8)
+     b6e:	4b0e      	ldr	r3, [pc, #56]	; (ba8 <tpm_busy_delay_ms+0xd8>)
+     b70:	681b      	ldr	r3, [r3, #0]
+     b72:	43da      	mvns	r2, r3
+     b74:	2380      	movs	r3, #128	; 0x80
+     b76:	4013      	ands	r3, r2
+     b78:	d1f9      	bne.n	b6e <tpm_busy_delay_ms+0x9e>
+	
+		// Write to TPM0_SC[TOF] to clear the timer overflow flag.
+		TPM0_SC |= 1 << 7;
+     b7a:	4b0b      	ldr	r3, [pc, #44]	; (ba8 <tpm_busy_delay_ms+0xd8>)
+     b7c:	4a0a      	ldr	r2, [pc, #40]	; (ba8 <tpm_busy_delay_ms+0xd8>)
+     b7e:	6812      	ldr	r2, [r2, #0]
+     b80:	2180      	movs	r1, #128	; 0x80
+     b82:	430a      	orrs	r2, r1
+     b84:	601a      	str	r2, [r3, #0]
+	// Write 0 to TPM_CONF to clear CSOT which will cause the counter to begin counting immediately after it is enabled.
+	TPM0_CONF &= 0 << 16;
+	
+	TPM0_SC |= (1 << 3);
+	
+	for(uint32_t i = 0; i < p_delay_ms; i++)
+     b86:	68fb      	ldr	r3, [r7, #12]
+     b88:	3301      	adds	r3, #1
+     b8a:	60fb      	str	r3, [r7, #12]
+     b8c:	68fa      	ldr	r2, [r7, #12]
+     b8e:	687b      	ldr	r3, [r7, #4]
+     b90:	429a      	cmp	r2, r3
+     b92:	d3eb      	bcc.n	b6c <tpm_busy_delay_ms+0x9c>
+	
+		// Write to TPM0_SC[TOF] to clear the timer overflow flag.
+		TPM0_SC |= 1 << 7;
+	}
+
+}
+     b94:	46bd      	mov	sp, r7
+     b96:	b004      	add	sp, #16
+     b98:	bd80      	pop	{r7, pc}
+     b9a:	46c0      	nop			; (mov r8, r8)
+     b9c:	40047000 	.word	0x40047000
+     ba0:	0000103c 	.word	0x0000103c
+     ba4:	00001004 	.word	0x00001004
+     ba8:	40038000 	.word	0x40038000
+     bac:	000003e7 	.word	0x000003e7
+
+00000bb0 <enableSIM>:
+//************************************************************************************************************
+#include "global.h"
+#include "sim.h"
+
+void enableSIM(int portBit)
+{
+     bb0:	b590      	push	{r4, r7, lr}
+     bb2:	b083      	sub	sp, #12
+     bb4:	af00      	add	r7, sp, #0
+     bb6:	6078      	str	r0, [r7, #4]
+	SIM_SCGC5 |= 1 << portBit;
+     bb8:	4a07      	ldr	r2, [pc, #28]	; (bd8 <enableSIM+0x28>)
+     bba:	4907      	ldr	r1, [pc, #28]	; (bd8 <enableSIM+0x28>)
+     bbc:	4b07      	ldr	r3, [pc, #28]	; (bdc <enableSIM+0x2c>)
+     bbe:	58c9      	ldr	r1, [r1, r3]
+     bc0:	2001      	movs	r0, #1
+     bc2:	687b      	ldr	r3, [r7, #4]
+     bc4:	1c04      	adds	r4, r0, #0
+     bc6:	409c      	lsls	r4, r3
+     bc8:	1c23      	adds	r3, r4, #0
+     bca:	4319      	orrs	r1, r3
+     bcc:	4b03      	ldr	r3, [pc, #12]	; (bdc <enableSIM+0x2c>)
+     bce:	50d1      	str	r1, [r2, r3]
+}
+     bd0:	46bd      	mov	sp, r7
+     bd2:	b003      	add	sp, #12
+     bd4:	bd90      	pop	{r4, r7, pc}
+     bd6:	46c0      	nop			; (mov r8, r8)
+     bd8:	40047000 	.word	0x40047000
+     bdc:	00001038 	.word	0x00001038
+
+00000be0 <port_gpio_config>:
+//************************************************************************************************************
+#include "global.h"
+#include "port.h"
+
+void port_gpio_config()
+{
+     be0:	b580      	push	{r7, lr}
+     be2:	af00      	add	r7, sp, #0
+	PORTB_PCR0 |= 0b001 << 8;
+     be4:	4b0e      	ldr	r3, [pc, #56]	; (c20 <port_gpio_config+0x40>)
+     be6:	4a0e      	ldr	r2, [pc, #56]	; (c20 <port_gpio_config+0x40>)
+     be8:	6812      	ldr	r2, [r2, #0]
+     bea:	2180      	movs	r1, #128	; 0x80
+     bec:	0049      	lsls	r1, r1, #1
+     bee:	430a      	orrs	r2, r1
+     bf0:	601a      	str	r2, [r3, #0]
+	PORTB_PCR1 |= 0b001 << 8;
+     bf2:	4b0b      	ldr	r3, [pc, #44]	; (c20 <port_gpio_config+0x40>)
+     bf4:	4a0a      	ldr	r2, [pc, #40]	; (c20 <port_gpio_config+0x40>)
+     bf6:	6852      	ldr	r2, [r2, #4]
+     bf8:	2180      	movs	r1, #128	; 0x80
+     bfa:	0049      	lsls	r1, r1, #1
+     bfc:	430a      	orrs	r2, r1
+     bfe:	605a      	str	r2, [r3, #4]
+	PORTB_PCR2 |= 0b001 << 8;
+     c00:	4b07      	ldr	r3, [pc, #28]	; (c20 <port_gpio_config+0x40>)
+     c02:	4a07      	ldr	r2, [pc, #28]	; (c20 <port_gpio_config+0x40>)
+     c04:	6892      	ldr	r2, [r2, #8]
+     c06:	2180      	movs	r1, #128	; 0x80
+     c08:	0049      	lsls	r1, r1, #1
+     c0a:	430a      	orrs	r2, r1
+     c0c:	609a      	str	r2, [r3, #8]
+	PORTB_PCR3 |= 0b001 << 8;
+     c0e:	4b04      	ldr	r3, [pc, #16]	; (c20 <port_gpio_config+0x40>)
+     c10:	4a03      	ldr	r2, [pc, #12]	; (c20 <port_gpio_config+0x40>)
+     c12:	68d2      	ldr	r2, [r2, #12]
+     c14:	2180      	movs	r1, #128	; 0x80
+     c16:	0049      	lsls	r1, r1, #1
+     c18:	430a      	orrs	r2, r1
+     c1a:	60da      	str	r2, [r3, #12]
+}
+     c1c:	46bd      	mov	sp, r7
+     c1e:	bd80      	pop	{r7, pc}
+     c20:	4004a000 	.word	0x4004a000
+
+00000c24 <hardware_init>:
+#include "gpio.h"
+
+
+
+void hardware_init()
+{
+     c24:	b580      	push	{r7, lr}
+     c26:	b082      	sub	sp, #8
+     c28:	af00      	add	r7, sp, #0
+	enableSIM(10); //Enable SIM for Port B
+     c2a:	200a      	movs	r0, #10
+     c2c:	f7ff ffc0 	bl	bb0 <enableSIM>
+
+	port_gpio_config();	//configure port B for GPIO
+     c30:	f7ff ffd6 	bl	be0 <port_gpio_config>
+
+	//Configure direction of bits 0-3 for output
+	int n=0;
+     c34:	2300      	movs	r3, #0
+     c36:	607b      	str	r3, [r7, #4]
+	while(n < 4)
+     c38:	e006      	b.n	c48 <hardware_init+0x24>
+	{
+		gpio_output_config(n); //Configure
+     c3a:	687b      	ldr	r3, [r7, #4]
+     c3c:	1c18      	adds	r0, r3, #0
+     c3e:	f000 f9b3 	bl	fa8 <gpio_output_config>
+		n++;
+     c42:	687b      	ldr	r3, [r7, #4]
+     c44:	3301      	adds	r3, #1
+     c46:	607b      	str	r3, [r7, #4]
+
+	port_gpio_config();	//configure port B for GPIO
+
+	//Configure direction of bits 0-3 for output
+	int n=0;
+	while(n < 4)
+     c48:	687b      	ldr	r3, [r7, #4]
+     c4a:	2b03      	cmp	r3, #3
+     c4c:	ddf5      	ble.n	c3a <hardware_init+0x16>
+		gpio_output_config(n); //Configure
+		n++;
+	}
+	
+	
+}
+     c4e:	46bd      	mov	sp, r7
+     c50:	b002      	add	sp, #8
+     c52:	bd80      	pop	{r7, pc}
+
+00000c54 <run>:
+
+void run()
+{
+     c54:	b580      	push	{r7, lr}
+     c56:	b082      	sub	sp, #8
+     c58:	af00      	add	r7, sp, #0
+	int count = 0;
+     c5a:	2300      	movs	r3, #0
+     c5c:	607b      	str	r3, [r7, #4]
+	uint32_t wait = 250;
+     c5e:	23fa      	movs	r3, #250	; 0xfa
+     c60:	603b      	str	r3, [r7, #0]
+	while(1)
+	{
+		switch(count)
+     c62:	687b      	ldr	r3, [r7, #4]
+     c64:	2b0f      	cmp	r3, #15
+     c66:	d900      	bls.n	c6a <run+0x16>
+     c68:	e155      	b.n	f16 <run+0x2c2>
+     c6a:	687b      	ldr	r3, [r7, #4]
+     c6c:	009a      	lsls	r2, r3, #2
+     c6e:	4bac      	ldr	r3, [pc, #688]	; (f20 <run+0x2cc>)
+     c70:	18d3      	adds	r3, r2, r3
+     c72:	681b      	ldr	r3, [r3, #0]
+     c74:	469f      	mov	pc, r3
+			case(0):
+			{
+				//turn on correct LEDs
+				//no LEDS
+				//wait
+				tpm_busy_delay_ms(wait);
+     c76:	683b      	ldr	r3, [r7, #0]
+     c78:	1c18      	adds	r0, r3, #0
+     c7a:	f7ff ff29 	bl	ad0 <tpm_busy_delay_ms>
+				//turn LEDs off
+				led_all_off(4);
+     c7e:	2004      	movs	r0, #4
+     c80:	f000 f97c 	bl	f7c <led_all_off>
+				//wait
+				tpm_busy_delay_ms(wait);
+     c84:	683b      	ldr	r3, [r7, #0]
+     c86:	1c18      	adds	r0, r3, #0
+     c88:	f7ff ff22 	bl	ad0 <tpm_busy_delay_ms>
+				count++;
+     c8c:	687b      	ldr	r3, [r7, #4]
+     c8e:	3301      	adds	r3, #1
+     c90:	607b      	str	r3, [r7, #4]
+				break;
+     c92:	e143      	b.n	f1c <run+0x2c8>
+			}
+			case(1):
+			{
+				//turn on correct LEDs
+				led_on(0); //1 = 2^0
+     c94:	2000      	movs	r0, #0
+     c96:	f000 f94f 	bl	f38 <led_on>
+				//wait
+				tpm_busy_delay_ms(wait);
+     c9a:	683b      	ldr	r3, [r7, #0]
+     c9c:	1c18      	adds	r0, r3, #0
+     c9e:	f7ff ff17 	bl	ad0 <tpm_busy_delay_ms>
+				//turn LEDs off
+				led_all_off(4);
+     ca2:	2004      	movs	r0, #4
+     ca4:	f000 f96a 	bl	f7c <led_all_off>
+				//wait
+				tpm_busy_delay_ms(wait);
+     ca8:	683b      	ldr	r3, [r7, #0]
+     caa:	1c18      	adds	r0, r3, #0
+     cac:	f7ff ff10 	bl	ad0 <tpm_busy_delay_ms>
+				count++;
+     cb0:	687b      	ldr	r3, [r7, #4]
+     cb2:	3301      	adds	r3, #1
+     cb4:	607b      	str	r3, [r7, #4]
+				break;
+     cb6:	e131      	b.n	f1c <run+0x2c8>
+			}
+			
+			case(2):
+			{
+				//turn on correct LEDs
+				led_on(1); //2 = 2^1
+     cb8:	2001      	movs	r0, #1
+     cba:	f000 f93d 	bl	f38 <led_on>
+				//wait
+				tpm_busy_delay_ms(wait);
+     cbe:	683b      	ldr	r3, [r7, #0]
+     cc0:	1c18      	adds	r0, r3, #0
+     cc2:	f7ff ff05 	bl	ad0 <tpm_busy_delay_ms>
+				//turn LEDs off
+				led_all_off(4);
+     cc6:	2004      	movs	r0, #4
+     cc8:	f000 f958 	bl	f7c <led_all_off>
+				//wait
+				tpm_busy_delay_ms(wait);
+     ccc:	683b      	ldr	r3, [r7, #0]
+     cce:	1c18      	adds	r0, r3, #0
+     cd0:	f7ff fefe 	bl	ad0 <tpm_busy_delay_ms>
+				count++;
+     cd4:	687b      	ldr	r3, [r7, #4]
+     cd6:	3301      	adds	r3, #1
+     cd8:	607b      	str	r3, [r7, #4]
+				break;
+     cda:	e11f      	b.n	f1c <run+0x2c8>
+			}
+			
+			case(3):
+			{
+				//turn on correct LEDs
+				led_on(0);	//3 = 2^0
+     cdc:	2000      	movs	r0, #0
+     cde:	f000 f92b 	bl	f38 <led_on>
+				led_on(1);	//  + 2^1
+     ce2:	2001      	movs	r0, #1
+     ce4:	f000 f928 	bl	f38 <led_on>
+				//wait
+				tpm_busy_delay_ms(wait);
+     ce8:	683b      	ldr	r3, [r7, #0]
+     cea:	1c18      	adds	r0, r3, #0
+     cec:	f7ff fef0 	bl	ad0 <tpm_busy_delay_ms>
+				//turn LEDs off
+				led_all_off(4);
+     cf0:	2004      	movs	r0, #4
+     cf2:	f000 f943 	bl	f7c <led_all_off>
+				//wait
+				tpm_busy_delay_ms(wait);
+     cf6:	683b      	ldr	r3, [r7, #0]
+     cf8:	1c18      	adds	r0, r3, #0
+     cfa:	f7ff fee9 	bl	ad0 <tpm_busy_delay_ms>
+				count++;
+     cfe:	687b      	ldr	r3, [r7, #4]
+     d00:	3301      	adds	r3, #1
+     d02:	607b      	str	r3, [r7, #4]
+				break;
+     d04:	e10a      	b.n	f1c <run+0x2c8>
+			}
+			
+			case(4):
+			{
+				//turn on correct LEDs
+				led_on(2);	//4 = 2^2
+     d06:	2002      	movs	r0, #2
+     d08:	f000 f916 	bl	f38 <led_on>
+				//wait
+				tpm_busy_delay_ms(wait);
+     d0c:	683b      	ldr	r3, [r7, #0]
+     d0e:	1c18      	adds	r0, r3, #0
+     d10:	f7ff fede 	bl	ad0 <tpm_busy_delay_ms>
+				//turn LEDs off
+				led_all_off(4);
+     d14:	2004      	movs	r0, #4
+     d16:	f000 f931 	bl	f7c <led_all_off>
+				//wait
+				tpm_busy_delay_ms(wait);
+     d1a:	683b      	ldr	r3, [r7, #0]
+     d1c:	1c18      	adds	r0, r3, #0
+     d1e:	f7ff fed7 	bl	ad0 <tpm_busy_delay_ms>
+				count++;
+     d22:	687b      	ldr	r3, [r7, #4]
+     d24:	3301      	adds	r3, #1
+     d26:	607b      	str	r3, [r7, #4]
+				break;
+     d28:	e0f8      	b.n	f1c <run+0x2c8>
+			}
+			
+			case(5):
+			{
+				//turn on correct LEDs
+				led_on(0);	//5 = 2^0
+     d2a:	2000      	movs	r0, #0
+     d2c:	f000 f904 	bl	f38 <led_on>
+				led_on(2);	//	+ 2^2
+     d30:	2002      	movs	r0, #2
+     d32:	f000 f901 	bl	f38 <led_on>
+				//wait
+				tpm_busy_delay_ms(wait);
+     d36:	683b      	ldr	r3, [r7, #0]
+     d38:	1c18      	adds	r0, r3, #0
+     d3a:	f7ff fec9 	bl	ad0 <tpm_busy_delay_ms>
+				//turn LEDs off
+				led_all_off(4);
+     d3e:	2004      	movs	r0, #4
+     d40:	f000 f91c 	bl	f7c <led_all_off>
+				//wait
+				tpm_busy_delay_ms(wait);
+     d44:	683b      	ldr	r3, [r7, #0]
+     d46:	1c18      	adds	r0, r3, #0
+     d48:	f7ff fec2 	bl	ad0 <tpm_busy_delay_ms>
+				count++;
+     d4c:	687b      	ldr	r3, [r7, #4]
+     d4e:	3301      	adds	r3, #1
+     d50:	607b      	str	r3, [r7, #4]
+				break;
+     d52:	e0e3      	b.n	f1c <run+0x2c8>
+			}
+			
+			case(6):
+			{
+				//turn on correct LEDs
+				led_on(1);	//6 = 2^1
+     d54:	2001      	movs	r0, #1
+     d56:	f000 f8ef 	bl	f38 <led_on>
+				led_on(2);	//	+ 2^2
+     d5a:	2002      	movs	r0, #2
+     d5c:	f000 f8ec 	bl	f38 <led_on>
+				//wait
+				tpm_busy_delay_ms(wait);
+     d60:	683b      	ldr	r3, [r7, #0]
+     d62:	1c18      	adds	r0, r3, #0
+     d64:	f7ff feb4 	bl	ad0 <tpm_busy_delay_ms>
+				//turn LEDs off
+				led_all_off(4);
+     d68:	2004      	movs	r0, #4
+     d6a:	f000 f907 	bl	f7c <led_all_off>
+				//wait
+				tpm_busy_delay_ms(wait);
+     d6e:	683b      	ldr	r3, [r7, #0]
+     d70:	1c18      	adds	r0, r3, #0
+     d72:	f7ff fead 	bl	ad0 <tpm_busy_delay_ms>
+				count++;
+     d76:	687b      	ldr	r3, [r7, #4]
+     d78:	3301      	adds	r3, #1
+     d7a:	607b      	str	r3, [r7, #4]
+				break;
+     d7c:	e0ce      	b.n	f1c <run+0x2c8>
+			}
+			
+			case(7):
+			{
+				//turn on correct LEDs
+				led_on(0);	//7 = 2^0
+     d7e:	2000      	movs	r0, #0
+     d80:	f000 f8da 	bl	f38 <led_on>
+				led_on(1);	//	+ 2^1
+     d84:	2001      	movs	r0, #1
+     d86:	f000 f8d7 	bl	f38 <led_on>
+				led_on(2);	//  + 2^2 
+     d8a:	2002      	movs	r0, #2
+     d8c:	f000 f8d4 	bl	f38 <led_on>
+				//wait
+				tpm_busy_delay_ms(wait);
+     d90:	683b      	ldr	r3, [r7, #0]
+     d92:	1c18      	adds	r0, r3, #0
+     d94:	f7ff fe9c 	bl	ad0 <tpm_busy_delay_ms>
+				//turn LEDs off
+				led_all_off(4);
+     d98:	2004      	movs	r0, #4
+     d9a:	f000 f8ef 	bl	f7c <led_all_off>
+				//wait
+				tpm_busy_delay_ms(wait);
+     d9e:	683b      	ldr	r3, [r7, #0]
+     da0:	1c18      	adds	r0, r3, #0
+     da2:	f7ff fe95 	bl	ad0 <tpm_busy_delay_ms>
+				count++;
+     da6:	687b      	ldr	r3, [r7, #4]
+     da8:	3301      	adds	r3, #1
+     daa:	607b      	str	r3, [r7, #4]
+				break;
+     dac:	e0b6      	b.n	f1c <run+0x2c8>
+			}
+			
+			case(8):
+			{
+				//turn on correct LEDs
+				led_on(3);	//8 = 2^3
+     dae:	2003      	movs	r0, #3
+     db0:	f000 f8c2 	bl	f38 <led_on>
+				//wait
+				tpm_busy_delay_ms(wait);
+     db4:	683b      	ldr	r3, [r7, #0]
+     db6:	1c18      	adds	r0, r3, #0
+     db8:	f7ff fe8a 	bl	ad0 <tpm_busy_delay_ms>
+				//turn LEDs off
+				led_all_off(4);
+     dbc:	2004      	movs	r0, #4
+     dbe:	f000 f8dd 	bl	f7c <led_all_off>
+				//wait
+				tpm_busy_delay_ms(wait);
+     dc2:	683b      	ldr	r3, [r7, #0]
+     dc4:	1c18      	adds	r0, r3, #0
+     dc6:	f7ff fe83 	bl	ad0 <tpm_busy_delay_ms>
+				count++;
+     dca:	687b      	ldr	r3, [r7, #4]
+     dcc:	3301      	adds	r3, #1
+     dce:	607b      	str	r3, [r7, #4]
+				break;
+     dd0:	e0a4      	b.n	f1c <run+0x2c8>
+			}
+			
+			case(9):
+			{
+				//turn on correct LEDs
+				led_on(0);	//9 = 2^0
+     dd2:	2000      	movs	r0, #0
+     dd4:	f000 f8b0 	bl	f38 <led_on>
+				led_on(3);	//	+ 2^3
+     dd8:	2003      	movs	r0, #3
+     dda:	f000 f8ad 	bl	f38 <led_on>
+				//wait
+				tpm_busy_delay_ms(wait);
+     dde:	683b      	ldr	r3, [r7, #0]
+     de0:	1c18      	adds	r0, r3, #0
+     de2:	f7ff fe75 	bl	ad0 <tpm_busy_delay_ms>
+				//turn LEDs off
+				led_all_off(4);
+     de6:	2004      	movs	r0, #4
+     de8:	f000 f8c8 	bl	f7c <led_all_off>
+				//wait
+				tpm_busy_delay_ms(wait);
+     dec:	683b      	ldr	r3, [r7, #0]
+     dee:	1c18      	adds	r0, r3, #0
+     df0:	f7ff fe6e 	bl	ad0 <tpm_busy_delay_ms>
+				count++;
+     df4:	687b      	ldr	r3, [r7, #4]
+     df6:	3301      	adds	r3, #1
+     df8:	607b      	str	r3, [r7, #4]
+				break;
+     dfa:	e08f      	b.n	f1c <run+0x2c8>
+			}
+			
+			case(10):
+			{
+				//turn on correct LEDs
+				led_on(1);	//10 = 2^1
+     dfc:	2001      	movs	r0, #1
+     dfe:	f000 f89b 	bl	f38 <led_on>
+				led_on(3);	//	 + 2^3
+     e02:	2003      	movs	r0, #3
+     e04:	f000 f898 	bl	f38 <led_on>
+				//wait
+				tpm_busy_delay_ms(wait);
+     e08:	683b      	ldr	r3, [r7, #0]
+     e0a:	1c18      	adds	r0, r3, #0
+     e0c:	f7ff fe60 	bl	ad0 <tpm_busy_delay_ms>
+				//turn LEDs off
+				led_all_off(4);
+     e10:	2004      	movs	r0, #4
+     e12:	f000 f8b3 	bl	f7c <led_all_off>
+				//wait
+				tpm_busy_delay_ms(wait);
+     e16:	683b      	ldr	r3, [r7, #0]
+     e18:	1c18      	adds	r0, r3, #0
+     e1a:	f7ff fe59 	bl	ad0 <tpm_busy_delay_ms>
+				count++;
+     e1e:	687b      	ldr	r3, [r7, #4]
+     e20:	3301      	adds	r3, #1
+     e22:	607b      	str	r3, [r7, #4]
+				break;
+     e24:	e07a      	b.n	f1c <run+0x2c8>
+			}
+			
+			case(11):
+			{
+				//turn on correct LEDs
+				led_on(0);	//11 = 2^0
+     e26:	2000      	movs	r0, #0
+     e28:	f000 f886 	bl	f38 <led_on>
+				led_on(1);	//	 + 2^1
+     e2c:	2001      	movs	r0, #1
+     e2e:	f000 f883 	bl	f38 <led_on>
+				led_on(3); 	//	 + 2^3
+     e32:	2003      	movs	r0, #3
+     e34:	f000 f880 	bl	f38 <led_on>
+				//wait
+				tpm_busy_delay_ms(wait);
+     e38:	683b      	ldr	r3, [r7, #0]
+     e3a:	1c18      	adds	r0, r3, #0
+     e3c:	f7ff fe48 	bl	ad0 <tpm_busy_delay_ms>
+				//turn LEDs off
+				led_all_off(4);
+     e40:	2004      	movs	r0, #4
+     e42:	f000 f89b 	bl	f7c <led_all_off>
+				//wait
+				tpm_busy_delay_ms(wait);
+     e46:	683b      	ldr	r3, [r7, #0]
+     e48:	1c18      	adds	r0, r3, #0
+     e4a:	f7ff fe41 	bl	ad0 <tpm_busy_delay_ms>
+				count++;
+     e4e:	687b      	ldr	r3, [r7, #4]
+     e50:	3301      	adds	r3, #1
+     e52:	607b      	str	r3, [r7, #4]
+				break;
+     e54:	e062      	b.n	f1c <run+0x2c8>
+			}
+			
+			case(12):
+			{
+				//turn on correct LEDs
+				led_on(2);	//12 = 2^2
+     e56:	2002      	movs	r0, #2
+     e58:	f000 f86e 	bl	f38 <led_on>
+				led_on(3);	//	 + 2^3
+     e5c:	2003      	movs	r0, #3
+     e5e:	f000 f86b 	bl	f38 <led_on>
+				//wait
+				tpm_busy_delay_ms(wait);
+     e62:	683b      	ldr	r3, [r7, #0]
+     e64:	1c18      	adds	r0, r3, #0
+     e66:	f7ff fe33 	bl	ad0 <tpm_busy_delay_ms>
+				//turn LEDs off
+				led_all_off(4);
+     e6a:	2004      	movs	r0, #4
+     e6c:	f000 f886 	bl	f7c <led_all_off>
+				//wait
+				tpm_busy_delay_ms(wait);
+     e70:	683b      	ldr	r3, [r7, #0]
+     e72:	1c18      	adds	r0, r3, #0
+     e74:	f7ff fe2c 	bl	ad0 <tpm_busy_delay_ms>
+				count++;
+     e78:	687b      	ldr	r3, [r7, #4]
+     e7a:	3301      	adds	r3, #1
+     e7c:	607b      	str	r3, [r7, #4]
+				break;
+     e7e:	e04d      	b.n	f1c <run+0x2c8>
+			}
+			
+			case(13):
+			{
+				//turn on correct LEDs
+				led_on(0);	//13 = 2^0
+     e80:	2000      	movs	r0, #0
+     e82:	f000 f859 	bl	f38 <led_on>
+				led_on(2);	//	 + 2^2
+     e86:	2002      	movs	r0, #2
+     e88:	f000 f856 	bl	f38 <led_on>
+				led_on(3);	//	 + 2^3
+     e8c:	2003      	movs	r0, #3
+     e8e:	f000 f853 	bl	f38 <led_on>
+				//wait
+				tpm_busy_delay_ms(wait);
+     e92:	683b      	ldr	r3, [r7, #0]
+     e94:	1c18      	adds	r0, r3, #0
+     e96:	f7ff fe1b 	bl	ad0 <tpm_busy_delay_ms>
+				//turn LEDs off
+				led_all_off(4);
+     e9a:	2004      	movs	r0, #4
+     e9c:	f000 f86e 	bl	f7c <led_all_off>
+				//wait
+				tpm_busy_delay_ms(wait);;
+     ea0:	683b      	ldr	r3, [r7, #0]
+     ea2:	1c18      	adds	r0, r3, #0
+     ea4:	f7ff fe14 	bl	ad0 <tpm_busy_delay_ms>
+				count++;
+     ea8:	687b      	ldr	r3, [r7, #4]
+     eaa:	3301      	adds	r3, #1
+     eac:	607b      	str	r3, [r7, #4]
+				break;
+     eae:	e035      	b.n	f1c <run+0x2c8>
+			}
+			
+			case(14):
+			{
+				//turn on correct LEDs
+				led_on(1);	//14 = 2^1
+     eb0:	2001      	movs	r0, #1
+     eb2:	f000 f841 	bl	f38 <led_on>
+				led_on(2);	//	 + 2^2
+     eb6:	2002      	movs	r0, #2
+     eb8:	f000 f83e 	bl	f38 <led_on>
+				led_on(3);	//	 + 2^3
+     ebc:	2003      	movs	r0, #3
+     ebe:	f000 f83b 	bl	f38 <led_on>
+				//wait
+				tpm_busy_delay_ms(wait);
+     ec2:	683b      	ldr	r3, [r7, #0]
+     ec4:	1c18      	adds	r0, r3, #0
+     ec6:	f7ff fe03 	bl	ad0 <tpm_busy_delay_ms>
+				//turn LEDs off
+				led_all_off(4);
+     eca:	2004      	movs	r0, #4
+     ecc:	f000 f856 	bl	f7c <led_all_off>
+				//wait
+				tpm_busy_delay_ms(wait);;
+     ed0:	683b      	ldr	r3, [r7, #0]
+     ed2:	1c18      	adds	r0, r3, #0
+     ed4:	f7ff fdfc 	bl	ad0 <tpm_busy_delay_ms>
+				count++;
+     ed8:	687b      	ldr	r3, [r7, #4]
+     eda:	3301      	adds	r3, #1
+     edc:	607b      	str	r3, [r7, #4]
+				break;
+     ede:	e01d      	b.n	f1c <run+0x2c8>
+			}
+			
+			case(15):
+			{
+				//turn on correct LEDs
+				led_on(0);	//15 = 2^0
+     ee0:	2000      	movs	r0, #0
+     ee2:	f000 f829 	bl	f38 <led_on>
+				led_on(1);	//	 + 2^1
+     ee6:	2001      	movs	r0, #1
+     ee8:	f000 f826 	bl	f38 <led_on>
+				led_on(2);	//	 + 2^2
+     eec:	2002      	movs	r0, #2
+     eee:	f000 f823 	bl	f38 <led_on>
+				led_on(3);	//	 + 2^3
+     ef2:	2003      	movs	r0, #3
+     ef4:	f000 f820 	bl	f38 <led_on>
+				//wait
+				tpm_busy_delay_ms(wait);
+     ef8:	683b      	ldr	r3, [r7, #0]
+     efa:	1c18      	adds	r0, r3, #0
+     efc:	f7ff fde8 	bl	ad0 <tpm_busy_delay_ms>
+				//turn LEDs off
+				led_all_off(4);
+     f00:	2004      	movs	r0, #4
+     f02:	f000 f83b 	bl	f7c <led_all_off>
+				//wait
+				tpm_busy_delay_ms(wait);
+     f06:	683b      	ldr	r3, [r7, #0]
+     f08:	1c18      	adds	r0, r3, #0
+     f0a:	f7ff fde1 	bl	ad0 <tpm_busy_delay_ms>
+				count++;
+     f0e:	687b      	ldr	r3, [r7, #4]
+     f10:	3301      	adds	r3, #1
+     f12:	607b      	str	r3, [r7, #4]
+				break;
+     f14:	e002      	b.n	f1c <run+0x2c8>
+			}
+			
+			default:
+			{
+				count = 0; //reset count
+     f16:	2300      	movs	r3, #0
+     f18:	607b      	str	r3, [r7, #4]
+				break;
+     f1a:	46c0      	nop			; (mov r8, r8)
+			}
+
+		}
+	}
+     f1c:	e6a1      	b.n	c62 <run+0xe>
+     f1e:	46c0      	nop			; (mov r8, r8)
+     f20:	00000fd0 	.word	0x00000fd0
+
+00000f24 <main>:
+}
+
+int main()
+{
+     f24:	b580      	push	{r7, lr}
+     f26:	af00      	add	r7, sp, #0
+	hardware_init();
+     f28:	f7ff fe7c 	bl	c24 <hardware_init>
+	
+	run();
+     f2c:	f7ff fe92 	bl	c54 <run>
+	
+	return 0;
+     f30:	2300      	movs	r3, #0
+}
+     f32:	1c18      	adds	r0, r3, #0
+     f34:	46bd      	mov	sp, r7
+     f36:	bd80      	pop	{r7, pc}
+
+00000f38 <led_on>:
+//************************************************************************************************************
+#include "global.h"
+#include "led.h"
+
+void led_on(int n)
+{
+     f38:	b590      	push	{r4, r7, lr}
+     f3a:	b083      	sub	sp, #12
+     f3c:	af00      	add	r7, sp, #0
+     f3e:	6078      	str	r0, [r7, #4]
+	GPIOB_PDOR |= 1 << n;
+     f40:	4b06      	ldr	r3, [pc, #24]	; (f5c <led_on+0x24>)
+     f42:	4a06      	ldr	r2, [pc, #24]	; (f5c <led_on+0x24>)
+     f44:	6811      	ldr	r1, [r2, #0]
+     f46:	2001      	movs	r0, #1
+     f48:	687a      	ldr	r2, [r7, #4]
+     f4a:	1c04      	adds	r4, r0, #0
+     f4c:	4094      	lsls	r4, r2
+     f4e:	1c22      	adds	r2, r4, #0
+     f50:	430a      	orrs	r2, r1
+     f52:	601a      	str	r2, [r3, #0]
+}
+     f54:	46bd      	mov	sp, r7
+     f56:	b003      	add	sp, #12
+     f58:	bd90      	pop	{r4, r7, pc}
+     f5a:	46c0      	nop			; (mov r8, r8)
+     f5c:	400ff040 	.word	0x400ff040
+
+00000f60 <led_off>:
+
+void led_off(int n)
+{
+     f60:	b580      	push	{r7, lr}
+     f62:	b082      	sub	sp, #8
+     f64:	af00      	add	r7, sp, #0
+     f66:	6078      	str	r0, [r7, #4]
+	GPIOB_PDOR &= 0 << n;
+     f68:	4b03      	ldr	r3, [pc, #12]	; (f78 <led_off+0x18>)
+     f6a:	681b      	ldr	r3, [r3, #0]
+     f6c:	4b02      	ldr	r3, [pc, #8]	; (f78 <led_off+0x18>)
+     f6e:	2200      	movs	r2, #0
+     f70:	601a      	str	r2, [r3, #0]
+}
+     f72:	46bd      	mov	sp, r7
+     f74:	b002      	add	sp, #8
+     f76:	bd80      	pop	{r7, pc}
+     f78:	400ff040 	.word	0x400ff040
+
+00000f7c <led_all_off>:
+
+//Turn off first n LEDs
+void led_all_off(int n) 
+{
+     f7c:	b580      	push	{r7, lr}
+     f7e:	b084      	sub	sp, #16
+     f80:	af00      	add	r7, sp, #0
+     f82:	6078      	str	r0, [r7, #4]
+	int i = 0;
+     f84:	2300      	movs	r3, #0
+     f86:	60fb      	str	r3, [r7, #12]
+	while(i < n)
+     f88:	e006      	b.n	f98 <led_all_off+0x1c>
+	{
+		led_off(i);
+     f8a:	68fb      	ldr	r3, [r7, #12]
+     f8c:	1c18      	adds	r0, r3, #0
+     f8e:	f7ff ffe7 	bl	f60 <led_off>
+		i++;
+     f92:	68fb      	ldr	r3, [r7, #12]
+     f94:	3301      	adds	r3, #1
+     f96:	60fb      	str	r3, [r7, #12]
+
+//Turn off first n LEDs
+void led_all_off(int n) 
+{
+	int i = 0;
+	while(i < n)
+     f98:	68fa      	ldr	r2, [r7, #12]
+     f9a:	687b      	ldr	r3, [r7, #4]
+     f9c:	429a      	cmp	r2, r3
+     f9e:	dbf4      	blt.n	f8a <led_all_off+0xe>
+	{
+		led_off(i);
+		i++;
+	}
+}
+     fa0:	46bd      	mov	sp, r7
+     fa2:	b004      	add	sp, #16
+     fa4:	bd80      	pop	{r7, pc}
+     fa6:	46c0      	nop			; (mov r8, r8)
+
+00000fa8 <gpio_output_config>:
+//************************************************************************************************************
+#include "global.h"
+#include "gpio.h"
+
+void gpio_output_config(int n)
+{
+     fa8:	b590      	push	{r4, r7, lr}
+     faa:	b083      	sub	sp, #12
+     fac:	af00      	add	r7, sp, #0
+     fae:	6078      	str	r0, [r7, #4]
+	GPIOB_PDDR |= 1 << n;
+     fb0:	4b06      	ldr	r3, [pc, #24]	; (fcc <gpio_output_config+0x24>)
+     fb2:	4a06      	ldr	r2, [pc, #24]	; (fcc <gpio_output_config+0x24>)
+     fb4:	6951      	ldr	r1, [r2, #20]
+     fb6:	2001      	movs	r0, #1
+     fb8:	687a      	ldr	r2, [r7, #4]
+     fba:	1c04      	adds	r4, r0, #0
+     fbc:	4094      	lsls	r4, r2
+     fbe:	1c22      	adds	r2, r4, #0
+     fc0:	430a      	orrs	r2, r1
+     fc2:	615a      	str	r2, [r3, #20]
+}
+     fc4:	46bd      	mov	sp, r7
+     fc6:	b003      	add	sp, #12
+     fc8:	bd90      	pop	{r4, r7, pc}
+     fca:	46c0      	nop			; (mov r8, r8)
+     fcc:	400ff040 	.word	0x400ff040
+     fd0:	00000c76 	.word	0x00000c76
+     fd4:	00000c94 	.word	0x00000c94
+     fd8:	00000cb8 	.word	0x00000cb8
+     fdc:	00000cdc 	.word	0x00000cdc
+     fe0:	00000d06 	.word	0x00000d06
+     fe4:	00000d2a 	.word	0x00000d2a
+     fe8:	00000d54 	.word	0x00000d54
+     fec:	00000d7e 	.word	0x00000d7e
+     ff0:	00000dae 	.word	0x00000dae
+     ff4:	00000dd2 	.word	0x00000dd2
+     ff8:	00000dfc 	.word	0x00000dfc
+     ffc:	00000e26 	.word	0x00000e26
+    1000:	00000e56 	.word	0x00000e56
+    1004:	00000e80 	.word	0x00000e80
+    1008:	00000eb0 	.word	0x00000eb0
+    100c:	00000ee0 	.word	0x00000ee0
